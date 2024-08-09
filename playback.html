@@ -9,122 +9,43 @@
         let player;
         let device_id = null;
         let deviceReady = false;
-        let token = null;
-        let currentUri = null; 
-        let retryCount = 0; // 添加一个重试计数器
+        let token = null;  // 将 token 提升为全局变量
 
         // Spotify Web Playback SDK 准备就绪时的回调
         window.onSpotifyWebPlaybackSDKReady = () => {
+            // 获取 token 和 URI 参数
             const urlParams = new URLSearchParams(window.location.search);
             token = urlParams.get('access_token');
-            currentUri = urlParams.get('uri');
+            const uri = urlParams.get('uri');
 
             console.log('Page loaded. Token:', token);
-            console.log('Spotify URI:', currentUri);
-            console.log('Initial deviceReady state:', deviceReady);
 
-            if (!token) {
-                console.error('Access token not found in URL');
-                return;
-            }
 
-            console.log('Access Token Found:', token);
-
-            player = new Spotify.Player({
-                name: 'Web Playback SDK Quick Start Player',
-                getOAuthToken: cb => {
-                    console.log('Providing Access Token to Spotify Player:', token);
-                    cb(token);
-                },
-                volume: 0.5
-            });
-
-            player.addListener('initialization_error', ({ message }) => {
-                console.error('Failed to initialize', message);
-            });
-            player.addListener('authentication_error', ({ message }) => {
-                console.error('Failed to authenticate', message);
-            });
-            player.addListener('account_error', ({ message }) => {
-                console.error('Failed to validate Spotify account', message);
-            });
-            player.addListener('playback_error', ({ message }) => {
-                console.error('Failed to perform playback', message);
-            });
-
-            player.addListener('player_state_changed', state => {
-                console.log('Player state changed:', state);
-
-                if (state.paused && !state.loading && state.track_window.current_track.uri) {
-                    if (retryCount < 3) { // 限制重试次数
-                        console.log('Player paused unexpectedly, attempting to resume...');
-                        retryCount++;
-                        player.resume().catch(error => console.error('Failed to resume playback:', error));
-                    } else {
-                        console.error('Playback could not resume after several attempts.');
-                    }
+                // 播放初始曲目
+                if (uri) {
+                    playSpotifyTrack(uri);  // 传递 URI
                 }
             });
 
-            player.addListener('ready', ({ device_id }) => {
-                console.log('Connected with Device ID', device_id);
-                window.device_id = device_id;
-                deviceReady = true;
-                console.log('Device Ready State in ready event:', deviceReady);
 
-                if (currentUri) {
-                    playSpotifyTrack(currentUri);
-                }
-            });
-
-            player.addListener('not_ready', ({ device_id }) => {
-                console.log('Device ID is not ready for playback', device_id);
-                deviceReady = false;
-            });
-
-            console.log('Attempting to connect to the player...');
-            player.connect().then(success => {
-                if (success) {
-                    console.log('The Web Playback SDK successfully connected to Spotify!');
-                } else {
-                    console.error('The Web Playback SDK could not connect to Spotify');
-                }
-                console.log('Post-connect deviceReady state:', deviceReady);
-            });
         };
 
-        function playSpotifyTrack(uri) {
+        // 定义 playSpotifyTrack 函数
+        function playSpotifyTrack(uri) {  // 不再需要传递 token，因为它是全局变量
             console.log('Attempting to play track with URI:', uri);
             if (!player) {
                 console.error('Player not initialized');
-                return;
-            }
-            if (!deviceReady || !window.device_id) {
-                console.error('Device ID not available or Player not ready');
-                console.log('Current Device ID:', window.device_id);
-                console.log('Device Ready State:', deviceReady);
-                return;
-            }
 
-            console.log('Sending play request to Spotify with Device ID:', window.device_id);
-
-            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${window.device_id}`, {
-                method: 'PUT',
                 body: JSON.stringify({ uris: [uri] }),
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`  // 使用全局的 token
                 },
             }).then(response => {
                 if (response.ok) {
                     console.log('Playback started successfully');
                 } else {
-                    console.error('Playback failed with status:', response.status, response.statusText);
-                    return response.json();
-                }
-            }).then(data => {
-                if (data && data.error) {
-                    console.error('Spotify API Error:', data.error.message);
+                    console.error('Playback failed with status:', response.status);
                 }
             }).catch(error => {
                 console.error('Error starting playback:', error);
@@ -133,4 +54,3 @@
     </script>
 </body>
 </html>
-
