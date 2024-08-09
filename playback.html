@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Spotify Player</title>
-    <!-- 确保 SDK 脚本在页面加载时加载 -->
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 </head>
 <body>
@@ -10,12 +9,13 @@
         let player;
         let device_id = null;
         let deviceReady = false;
+        let token = null;  // 将 token 提升为全局变量
 
         // Spotify Web Playback SDK 准备就绪时的回调
         window.onSpotifyWebPlaybackSDKReady = () => {
             // 获取 token 和 URI 参数
             const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('access_token');
+            token = urlParams.get('access_token');
             const uri = urlParams.get('uri');
 
             console.log('Page loaded. Token:', token);
@@ -65,7 +65,7 @@
 
                 // 播放初始曲目
                 if (uri) {
-                    playSpotifyTrack(uri);
+                    playSpotifyTrack(uri);  // 传递 URI
                 }
             });
 
@@ -86,7 +86,7 @@
         };
 
         // 定义 playSpotifyTrack 函数
-        function playSpotifyTrack(uri) {
+        function playSpotifyTrack(uri) {  // 不再需要传递 token，因为它是全局变量
             console.log('Attempting to play track with URI:', uri);
             if (!player) {
                 console.error('Player not initialized');
@@ -106,7 +106,7 @@
                 body: JSON.stringify({ uris: [uri] }),
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`  // 使用全局的 token
                 },
             }).then(response => {
                 if (response.ok) {
