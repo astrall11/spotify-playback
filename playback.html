@@ -10,11 +10,11 @@
         let device_id = null;
         let deviceReady = false;
         let token = null;
-        let currentUri = null; // 记录当前播放的URI
+        let currentUri = null; 
+        let retryCount = 0; // 添加一个重试计数器
 
         // Spotify Web Playback SDK 准备就绪时的回调
         window.onSpotifyWebPlaybackSDKReady = () => {
-            // 获取 token 和 URI 参数
             const urlParams = new URLSearchParams(window.location.search);
             token = urlParams.get('access_token');
             currentUri = urlParams.get('uri');
@@ -30,7 +30,6 @@
 
             console.log('Access Token Found:', token);
 
-            // 初始化 Spotify Player
             player = new Spotify.Player({
                 name: 'Web Playback SDK Quick Start Player',
                 getOAuthToken: cb => {
@@ -40,7 +39,6 @@
                 volume: 0.5
             });
 
-            // 事件监听器
             player.addListener('initialization_error', ({ message }) => {
                 console.error('Failed to initialize', message);
             });
@@ -56,11 +54,15 @@
 
             player.addListener('player_state_changed', state => {
                 console.log('Player state changed:', state);
-                
-                // 自动恢复播放
+
                 if (state.paused && !state.loading && state.track_window.current_track.uri) {
-                    console.log('Player paused unexpectedly, attempting to resume...');
-                    player.resume().catch(error => console.error('Failed to resume playback:', error));
+                    if (retryCount < 3) { // 限制重试次数
+                        console.log('Player paused unexpectedly, attempting to resume...');
+                        retryCount++;
+                        player.resume().catch(error => console.error('Failed to resume playback:', error));
+                    } else {
+                        console.error('Playback could not resume after several attempts.');
+                    }
                 }
             });
 
@@ -70,7 +72,6 @@
                 deviceReady = true;
                 console.log('Device Ready State in ready event:', deviceReady);
 
-                // 播放初始曲目
                 if (currentUri) {
                     playSpotifyTrack(currentUri);
                 }
@@ -92,7 +93,6 @@
             });
         };
 
-        // 定义 playSpotifyTrack 函数
         function playSpotifyTrack(uri) {
             console.log('Attempting to play track with URI:', uri);
             if (!player) {
@@ -119,7 +119,12 @@
                 if (response.ok) {
                     console.log('Playback started successfully');
                 } else {
-                    console.error('Playback failed with status:', response.status);
+                    console.error('Playback failed with status:', response.status, response.statusText);
+                    return response.json();
+                }
+            }).then(data => {
+                if (data && data.error) {
+                    console.error('Spotify API Error:', data.error.message);
                 }
             }).catch(error => {
                 console.error('Error starting playback:', error);
