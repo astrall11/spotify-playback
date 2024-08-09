@@ -6,14 +6,14 @@
 </head>
 <body>
     <button id="playPauseButton">Play</button> <!-- 播放/暂停按钮 -->
-    
+
     <script>
         let player;
         let device_id = null;
         let deviceReady = false;
         let token = null;
         let currentUri = null;
-        let isPlaying = false; // 用于跟踪播放状态
+        let isPlaying = false;
 
         // Spotify Web Playback SDK 准备就绪时的回调
         window.onSpotifyWebPlaybackSDKReady = () => {
@@ -55,17 +55,17 @@
                 console.log('Connected with Device ID', device_id);
                 window.device_id = device_id;
                 deviceReady = true;
+                updateDeviceStatus();
             });
 
             player.addListener('not_ready', ({ device_id }) => {
                 console.log('Device ID is not ready for playback', device_id);
                 deviceReady = false;
+                updateDeviceStatus();
             });
 
             player.addListener('player_state_changed', state => {
                 console.log('Player state changed:', state);
-
-                // 更新播放状态
                 isPlaying = !state.paused;
                 updateButtonLabel();
             });
@@ -80,7 +80,6 @@
             });
         };
 
-        // 定义播放/暂停切换函数
         function togglePlayPause() {
             if (!player || !deviceReady || !window.device_id) {
                 console.error('Player not initialized or not ready');
@@ -97,26 +96,13 @@
                 });
             } else {
                 if (currentUri) {
-                    player.resume().then(() => {
-                        console.log('Playback resumed');
-                        isPlaying = true;
-                        updateButtonLabel();
-                    }).catch(error => {
-                        console.error('Error resuming playback:', error);
-                    });
-                } else {
                     playSpotifyTrack(currentUri);
+                } else {
+                    console.error('No track URI found.');
                 }
             }
         }
 
-        // 更新按钮标签
-        function updateButtonLabel() {
-            const button = document.getElementById('playPauseButton');
-            button.textContent = isPlaying ? 'Pause' : 'Play';
-        }
-
-        // 定义 playSpotifyTrack 函数
         function playSpotifyTrack(uri) {
             console.log('Attempting to play track with URI:', uri);
             if (!player || !deviceReady || !window.device_id) {
@@ -142,6 +128,18 @@
             }).catch(error => {
                 console.error('Error starting playback:', error);
             });
+        }
+
+        // 更新按钮标签
+        function updateButtonLabel() {
+            const button = document.getElementById('playPauseButton');
+            button.textContent = isPlaying ? 'Pause' : 'Play';
+        }
+
+        // 显示设备状态
+        function updateDeviceStatus() {
+            console.log('Device Ready State:', deviceReady);
+            console.log('Device ID:', window.device_id);
         }
 
         // 绑定按钮点击事件
