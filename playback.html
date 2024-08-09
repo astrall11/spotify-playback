@@ -5,12 +5,15 @@
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 </head>
 <body>
+    <button id="playPauseButton">Play</button> <!-- 播放/暂停按钮 -->
+    
     <script>
         let player;
         let device_id = null;
         let deviceReady = false;
         let token = null;
-        let currentUri = null; // 记录当前播放的URI
+        let currentUri = null;
+        let isPlaying = false; // 用于跟踪播放状态
 
         // Spotify Web Playback SDK 准备就绪时的回调
         window.onSpotifyWebPlaybackSDKReady = () => {
@@ -21,22 +24,16 @@
 
             console.log('Page loaded. Token:', token);
             console.log('Spotify URI:', currentUri);
-            console.log('Initial deviceReady state:', deviceReady);
 
             if (!token) {
                 console.error('Access token not found in URL');
                 return;
             }
 
-            console.log('Access Token Found:', token);
-
             // 初始化 Spotify Player
             player = new Spotify.Player({
                 name: 'Web Playback SDK Quick Start Player',
-                getOAuthToken: cb => {
-                    console.log('Providing Access Token to Spotify Player:', token);
-                    cb(token);
-                },
+                getOAuthToken: cb => { cb(token); },
                 volume: 0.5
             });
 
@@ -54,26 +51,10 @@
                 console.error('Failed to perform playback', message);
             });
 
-            player.addListener('player_state_changed', state => {
-                console.log('Player state changed:', state);
-                
-                // 自动恢复播放
-                if (state.paused && !state.loading && state.track_window.current_track.uri) {
-                    console.log('Player paused unexpectedly, attempting to resume...');
-                    player.resume().catch(error => console.error('Failed to resume playback:', error));
-                }
-            });
-
             player.addListener('ready', ({ device_id }) => {
                 console.log('Connected with Device ID', device_id);
                 window.device_id = device_id;
                 deviceReady = true;
-                console.log('Device Ready State in ready event:', deviceReady);
-
-                // 播放初始曲目
-                if (currentUri) {
-                    playSpotifyTrack(currentUri);
-                }
             });
 
             player.addListener('not_ready', ({ device_id }) => {
@@ -81,32 +62,67 @@
                 deviceReady = false;
             });
 
+            player.addListener('player_state_changed', state => {
+                console.log('Player state changed:', state);
+
+                // 更新播放状态
+                isPlaying = !state.paused;
+                updateButtonLabel();
+            });
+
             console.log('Attempting to connect to the player...');
             player.connect().then(success => {
                 if (success) {
                     console.log('The Web Playback SDK successfully connected to Spotify!');
                 } else {
-                    console.error('The Web Playback SDK could not connect to Spotify');
+                    console.error('Failed to connect to Spotify.');
                 }
-                console.log('Post-connect deviceReady state:', deviceReady);
             });
         };
+
+        // 定义播放/暂停切换函数
+        function togglePlayPause() {
+            if (!player || !deviceReady || !window.device_id) {
+                console.error('Player not initialized or not ready');
+                return;
+            }
+
+            if (isPlaying) {
+                player.pause().then(() => {
+                    console.log('Playback paused');
+                    isPlaying = false;
+                    updateButtonLabel();
+                }).catch(error => {
+                    console.error('Error pausing playback:', error);
+                });
+            } else {
+                if (currentUri) {
+                    player.resume().then(() => {
+                        console.log('Playback resumed');
+                        isPlaying = true;
+                        updateButtonLabel();
+                    }).catch(error => {
+                        console.error('Error resuming playback:', error);
+                    });
+                } else {
+                    playSpotifyTrack(currentUri);
+                }
+            }
+        }
+
+        // 更新按钮标签
+        function updateButtonLabel() {
+            const button = document.getElementById('playPauseButton');
+            button.textContent = isPlaying ? 'Pause' : 'Play';
+        }
 
         // 定义 playSpotifyTrack 函数
         function playSpotifyTrack(uri) {
             console.log('Attempting to play track with URI:', uri);
-            if (!player) {
-                console.error('Player not initialized');
+            if (!player || !deviceReady || !window.device_id) {
+                console.error('Player not initialized or not ready');
                 return;
             }
-            if (!deviceReady || !window.device_id) {
-                console.error('Device ID not available or Player not ready');
-                console.log('Current Device ID:', window.device_id);
-                console.log('Device Ready State:', deviceReady);
-                return;
-            }
-
-            console.log('Sending play request to Spotify with Device ID:', window.device_id);
 
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${window.device_id}`, {
                 method: 'PUT',
@@ -118,6 +134,8 @@
             }).then(response => {
                 if (response.ok) {
                     console.log('Playback started successfully');
+                    isPlaying = true;
+                    updateButtonLabel();
                 } else {
                     console.error('Playback failed with status:', response.status);
                 }
@@ -125,8 +143,12 @@
                 console.error('Error starting playback:', error);
             });
         }
+
+        // 绑定按钮点击事件
+        document.getElementById('playPauseButton').addEventListener('click', togglePlayPause);
     </script>
 </body>
 </html>
+
 
 
