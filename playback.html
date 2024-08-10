@@ -17,6 +17,8 @@
 </head>
 <body>
     <button id="playPauseButton">Play</button> <!-- 播放/暂停按钮 -->
+    <!-- 使用 <audio> 元素播放音频 -->
+    <audio id="audioPlayer" controls style="display:none;"></audio>
 
     <script>
         let player;
@@ -97,7 +99,7 @@
                 }
             });
 
-            // 监听PiP事件
+            // 监听 PiP 事件
             document.addEventListener('enterpictureinpicture', () => {
                 console.log('Entered PiP mode');
                 if (!isPlaying && deviceReady) {
@@ -107,7 +109,7 @@
 
             document.addEventListener('leavepictureinpicture', () => {
                 console.log('Left PiP mode');
-                // 可以选择在离开PiP模式后自动暂停播放
+                // 可以选择在离开 PiP 模式后自动暂停播放
                 // player.pause().catch(error => console.error('Failed to pause playback after leaving PiP:', error));
             });
         };
