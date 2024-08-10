@@ -12,11 +12,20 @@
             padding: 40px 80px; /* 增大按钮的尺寸 */
             font-size: 50px; /* 增大按钮文字的字体 */
         }
+
+        /* 隐藏视频画面 */
+        #audioVideo {
+            width: 0;
+            height: 0;
+            position: absolute;
+            visibility: hidden;
+        }
     </style>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 </head>
 <body>
     <button id="playPauseButton">Play</button> <!-- 播放/暂停按钮 -->
+    <video id="audioVideo" controls></video> <!-- 用于播放音频的隐藏视频元素 -->
 
     <script>
         let player;
@@ -27,6 +36,8 @@
         let isPlaying = false;
         let playRetryAttempts = 0; // 记录尝试次数
         const maxRetryAttempts = 4; // 最大重试次数
+
+        const videoElement = document.getElementById('audioVideo');
 
         // Spotify Web Playback SDK 准备就绪时的回调
         window.onSpotifyWebPlaybackSDKReady = () => {
@@ -120,6 +131,7 @@
 
             if (isPlaying) {
                 player.pause().then(() => {
+                    videoElement.pause(); // 暂停视频播放
                     console.log('Playback paused');
                     isPlaying = false;
                     updateButtonLabel();
@@ -128,6 +140,7 @@
                 });
             } else {
                 player.resume().then(() => {
+                    videoElement.play(); // 开始视频播放
                     console.log('Playback resumed');
                     isPlaying = true;
                     updateButtonLabel();
@@ -153,6 +166,8 @@
                 },
             }).then(response => {
                 if (response.ok) {
+                    videoElement.src = currentUri; // 将 Spotify 的 URI 设置为 video 的 src
+                    videoElement.play(); // 播放视频
                     console.log('Playback started successfully');
                     isPlaying = true;
                     updateButtonLabel();
