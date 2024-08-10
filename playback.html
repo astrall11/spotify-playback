@@ -10,7 +10,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             padding: 40px 80px; /* 增大按钮的尺寸 */
-            font-size: 40px; /* 增大按钮文字的字体 */
+            font-size: 50px; /* 增大按钮文字的字体 */
         }
     </style>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
@@ -25,6 +25,8 @@
         let token = null;
         let currentUri = null;
         let isPlaying = false;
+        let playRetryAttempts = 0; // 记录尝试次数
+        const maxRetryAttempts = 4; // 最大重试次数
 
         // Spotify Web Playback SDK 准备就绪时的回调
         window.onSpotifyWebPlaybackSDKReady = () => {
@@ -70,7 +72,7 @@
 
                 // 页面加载后自动开始播放
                 if (currentUri) {
-                    forcePlaySpotifyTrack(currentUri);
+                    attemptToPlay(currentUri);
                 }
             });
 
@@ -135,11 +137,10 @@
             }
         }
 
-        function forcePlaySpotifyTrack(uri) {
-            console.log('Attempting to force play track with URI:', uri);
+        function playSpotifyTrack(uri) {
+            console.log('Attempting to play track with URI:', uri);
             if (!player || !deviceReady || !window.device_id) {
                 console.error('Player not initialized or not ready');
-                setTimeout(() => forcePlaySpotifyTrack(uri), 1000); // 如果未准备好，等待1秒后重试
                 return;
             }
 
@@ -157,12 +158,27 @@
                     updateButtonLabel();
                 } else {
                     console.error('Playback failed with status:', response.status);
-                    setTimeout(() => forcePlaySpotifyTrack(uri), 1000); // 失败时等待1秒后重试
+                    retryPlay(uri); // 失败时重试播放
                 }
             }).catch(error => {
                 console.error('Error starting playback:', error);
-                setTimeout(() => forcePlaySpotifyTrack(uri), 1000); // 错误时等待1秒后重试
+                retryPlay(uri); // 失败时重试播放
             });
+        }
+
+        function retryPlay(uri) {
+            if (playRetryAttempts < maxRetryAttempts) {
+                playRetryAttempts++;
+                console.log(`Retrying to play track (attempt ${playRetryAttempts})...`);
+                setTimeout(() => playSpotifyTrack(uri), 2000); // 每隔2秒重试一次
+            } else {
+                console.error('Max retry attempts reached. Playback failed.');
+            }
+        }
+
+        // 尝试播放，包含重试逻辑
+        function attemptToPlay(uri) {
+            playSpotifyTrack(uri);
         }
 
         // 更新按钮标签
