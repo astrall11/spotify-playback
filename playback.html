@@ -1,120 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Spotify Player</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video PiP Test</title>
     <style>
-        /* 将按钮放置在屏幕中间，并增大按钮尺寸 */
         #playPauseButton {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            padding: 40px 80px; /* 增大按钮的尺寸 */
-            font-size: 50px; /* 增大按钮文字的字体 */
+            padding: 20px 40px;
+            font-size: 20px;
+        }
+        #videoPlayer {
+            width: 640px;
+            height: 360px;
+            display: block;
+            margin: 0 auto;
         }
     </style>
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
 </head>
 <body>
-    <button id="playPauseButton">Play</button> <!-- 播放/暂停按钮 -->
-    <audio id="audioPlayer" controls style="display:none;"></audio>
+    <button id="playPauseButton">Play Video</button>
+    <video id="videoPlayer" controls>
+        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4"> <!-- 使用的视频 URL -->
+        Your browser does not support the video tag.
+    </video>
 
     <script>
-        let player;
-        let device_id = null;
-        let deviceReady = false;
-        let token = null;
-        let currentUri = null;
+        let videoElement = document.getElementById('videoPlayer');
         let isPlaying = false;
-
-        window.onSpotifyWebPlaybackSDKReady = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            token = urlParams.get('access_token');
-            currentUri = urlParams.get('uri');
-
-            player = new Spotify.Player({
-                name: 'Web Playback SDK Quick Start Player',
-                getOAuthToken: cb => { cb(token); },
-                volume: 0.5
-            });
-
-            player.addListener('ready', ({ device_id }) => {
-                console.log('Connected with Device ID', device_id);
-                window.device_id = device_id;
-                deviceReady = true;
-
-                if (currentUri) {
-                    playSpotifyTrack(currentUri);
-                }
-            });
-
-            player.connect();
-        };
 
         function togglePlayPause() {
             if (isPlaying) {
-                player.pause().then(() => {
-                    console.log('Playback paused');
-                    isPlaying = false;
-                    updateButtonLabel();
-                });
+                videoElement.pause();
+                isPlaying = false;
+                updateButtonLabel();
             } else {
-                player.resume().then(() => {
-                    console.log('Playback resumed');
-                    isPlaying = true;
-                    updateButtonLabel();
-                });
+                videoElement.play();
+                isPlaying = true;
+                updateButtonLabel();
+                enterVideoPiP();
             }
         }
 
-        function playSpotifyTrack(uri) {
-            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${window.device_id}`, {
-                method: 'PUT',
-                body: JSON.stringify({ uris: [uri] }),
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-            }).then(response => {
-                if (response.ok) {
-                    console.log('Playback started successfully');
-                    isPlaying = true;
-                    updateButtonLabel();
+        async function enterVideoPiP() {
+            try {
+                if (videoElement.requestPictureInPicture) {
+                    await videoElement.requestPictureInPicture();
+                    console.log('Entered Video PiP mode');
                 } else {
-                    console.error('Playback failed with status:', response.status);
+                    console.error('Video Picture-in-Picture is not supported in this browser.');
                 }
-            }).catch(error => {
-                console.error('Error starting playback:', error);
-            });
+            } catch (error) {
+                console.error('Failed to enter Video PiP mode:', error);
+            }
         }
 
         function updateButtonLabel() {
             const button = document.getElementById('playPauseButton');
-            button.textContent = isPlaying ? 'Pause' : 'Play';
+            button.textContent = isPlaying ? 'Pause Video' : 'Play Video';
         }
 
-        // 新增：进入Document PiP模式的函数
-        async function enterDocumentPiP() {
-            try {
-                if (document.pictureInPictureEnabled) {
-                    const pipWindow = await document.documentElement.requestPictureInPicture();
-                    pipWindow.addEventListener('leavepictureinpicture', () => {
-                        console.log('Left Document PiP mode');
-                    });
-                    console.log('Entered Document PiP mode');
-                } else {
-                    console.error('Document Picture-in-Picture is not supported in this browser.');
-                }
-            } catch (error) {
-                console.error('Failed to enter Document PiP mode:', error);
-            }
-        }
-
-        // 绑定播放按钮的点击事件，并在播放时进入PiP模式
-        document.getElementById('playPauseButton').addEventListener('click', () => {
-            togglePlayPause();
-            enterDocumentPiP();
-        });
+        document.getElementById('playPauseButton').addEventListener('click', togglePlayPause);
     </script>
 </body>
 </html>
