@@ -1,31 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotify Player with PiP</title>
+    <title>Spotify Player</title>
     <style>
+        /* 将按钮放置在屏幕中间，并增大按钮尺寸 */
         #playPauseButton {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            padding: 40px 80px;
-            font-size: 50px;
-        }
-        #audioVideo {
-            width: 0;
-            height: 0;
-            position: absolute;
-            visibility: hidden;
+            padding: 40px 80px; /* 增大按钮的尺寸 */
+            font-size: 50px; /* 增大按钮文字的字体 */
         }
     </style>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
 </head>
 <body>
-    <button id="playPauseButton">Play</button>
-    <video id="audioVideo" controls></video>
+    <button id="playPauseButton">Play</button> <!-- 播放/暂停按钮 -->
 
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script>
         let player;
         let device_id = null;
@@ -33,12 +25,12 @@
         let token = null;
         let currentUri = null;
         let isPlaying = false;
-        let playRetryAttempts = 0;
-        const maxRetryAttempts = 4;
+        let playRetryAttempts = 0; // 记录尝试次数
+        const maxRetryAttempts = 4; // 最大重试次数
 
-        const videoElement = document.getElementById('audioVideo');
-
+        // Spotify Web Playback SDK 准备就绪时的回调
         window.onSpotifyWebPlaybackSDKReady = () => {
+            // 获取 token 和 URI 参数
             const urlParams = new URLSearchParams(window.location.search);
             token = urlParams.get('access_token');
             currentUri = urlParams.get('uri');
@@ -51,16 +43,26 @@
                 return;
             }
 
+            // 初始化 Spotify Player
             player = new Spotify.Player({
                 name: 'Web Playback SDK Quick Start Player',
                 getOAuthToken: cb => { cb(token); },
                 volume: 0.5
             });
 
-            player.addListener('initialization_error', ({ message }) => console.error('Failed to initialize', message));
-            player.addListener('authentication_error', ({ message }) => console.error('Failed to authenticate', message));
-            player.addListener('account_error', ({ message }) => console.error('Failed to validate Spotify account', message));
-            player.addListener('playback_error', ({ message }) => console.error('Failed to perform playback', message));
+            // 事件监听器
+            player.addListener('initialization_error', ({ message }) => {
+                console.error('Failed to initialize', message);
+            });
+            player.addListener('authentication_error', ({ message }) => {
+                console.error('Failed to authenticate', message);
+            });
+            player.addListener('account_error', ({ message }) => {
+                console.error('Failed to validate Spotify account', message);
+            });
+            player.addListener('playback_error', ({ message }) => {
+                console.error('Failed to perform playback', message);
+            });
 
             player.addListener('ready', ({ device_id }) => {
                 console.log('Connected with Device ID', device_id);
@@ -68,6 +70,7 @@
                 deviceReady = true;
                 updateDeviceStatus();
 
+                // 页面加载后自动开始播放
                 if (currentUri) {
                     attemptToPlay(currentUri);
                 }
@@ -94,15 +97,18 @@
                 }
             });
 
-            videoElement.addEventListener('enterpictureinpicture', () => {
+            // 监听PiP事件
+            document.addEventListener('enterpictureinpicture', () => {
                 console.log('Entered PiP mode');
                 if (!isPlaying && deviceReady) {
                     player.resume().catch(error => console.error('Failed to resume playback in PiP:', error));
                 }
             });
 
-            videoElement.addEventListener('leavepictureinpicture', () => {
+            document.addEventListener('leavepictureinpicture', () => {
                 console.log('Left PiP mode');
+                // 可以选择在离开PiP模式后自动暂停播放
+                // player.pause().catch(error => console.error('Failed to pause playback after leaving PiP:', error));
             });
         };
 
@@ -114,18 +120,20 @@
 
             if (isPlaying) {
                 player.pause().then(() => {
-                    videoElement.pause();
                     console.log('Playback paused');
                     isPlaying = false;
                     updateButtonLabel();
-                }).catch(error => console.error('Error pausing playback:', error));
+                }).catch(error => {
+                    console.error('Error pausing playback:', error);
+                });
             } else {
                 player.resume().then(() => {
-                    videoElement.play();
                     console.log('Playback resumed');
                     isPlaying = true;
                     updateButtonLabel();
-                }).catch(error => console.error('Error resuming playback:', error));
+                }).catch(error => {
+                    console.error('Error resuming playback:', error);
+                });
             }
         }
 
@@ -145,19 +153,16 @@
                 },
             }).then(response => {
                 if (response.ok) {
-                    videoElement.src = currentUri;
-                    videoElement.play();
-                    videoElement.requestPictureInPicture(); // 请求进入PiP模式
                     console.log('Playback started successfully');
                     isPlaying = true;
                     updateButtonLabel();
                 } else {
                     console.error('Playback failed with status:', response.status);
-                    retryPlay(uri);
+                    retryPlay(uri); // 失败时重试播放
                 }
             }).catch(error => {
                 console.error('Error starting playback:', error);
-                retryPlay(uri);
+                retryPlay(uri); // 失败时重试播放
             });
         }
 
@@ -165,28 +170,31 @@
             if (playRetryAttempts < maxRetryAttempts) {
                 playRetryAttempts++;
                 console.log(`Retrying to play track (attempt ${playRetryAttempts})...`);
-                setTimeout(() => playSpotifyTrack(uri), 2000);
+                setTimeout(() => playSpotifyTrack(uri), 2000); // 每隔2秒重试一次
             } else {
                 console.error('Max retry attempts reached. Playback failed.');
             }
         }
 
+        // 尝试播放，包含重试逻辑
         function attemptToPlay(uri) {
             playSpotifyTrack(uri);
         }
 
+        // 更新按钮标签
         function updateButtonLabel() {
             const button = document.getElementById('playPauseButton');
             button.textContent = isPlaying ? 'Pause' : 'Play';
         }
 
+        // 显示设备状态
         function updateDeviceStatus() {
             console.log('Device Ready State:', deviceReady);
             console.log('Device ID:', window.device_id);
         }
 
+        // 绑定按钮点击事件
         document.getElementById('playPauseButton').addEventListener('click', togglePlayPause);
     </script>
 </body>
 </html>
-
