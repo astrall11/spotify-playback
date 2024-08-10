@@ -2,6 +2,17 @@
 <html>
 <head>
     <title>Spotify Player</title>
+    <style>
+        /* 将按钮放置在屏幕中间 */
+        #playPauseButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    </style>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
 </head>
 <body>
@@ -56,6 +67,11 @@
                 window.device_id = device_id;
                 deviceReady = true;
                 updateDeviceStatus();
+
+                // 页面加载后自动开始播放
+                if (currentUri) {
+                    playSpotifyTrack(currentUri);
+                }
             });
 
             player.addListener('not_ready', ({ device_id }) => {
@@ -95,11 +111,13 @@
                     console.error('Error pausing playback:', error);
                 });
             } else {
-                if (currentUri) {
-                    playSpotifyTrack(currentUri);
-                } else {
-                    console.error('No track URI found.');
-                }
+                player.resume().then(() => {
+                    console.log('Playback resumed');
+                    isPlaying = true;
+                    updateButtonLabel();
+                }).catch(error => {
+                    console.error('Error resuming playback:', error);
+                });
             }
         }
 
@@ -147,6 +165,7 @@
     </script>
 </body>
 </html>
+
 
 
 
