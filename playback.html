@@ -90,6 +90,14 @@
                 updateButtonLabel();
             });
 
+            document.addEventListener('enterpictureinpicture', () => {
+                console.log('Entered PiP mode');
+                if (!isPlaying && deviceReady) {
+                player.resume().catch(error => console.error('Failed to resume playback in PiP:', error));
+                }
+            });
+
+
             console.log('Attempting to connect to the player...');
             player.connect().then(success => {
                 if (success) {
