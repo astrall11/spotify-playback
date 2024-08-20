@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify Player</title>
     <style>
         body {
@@ -14,41 +16,57 @@
             margin: 0;
         }
         .player-container {
-            width: 90%;
-            max-width: 400px;
+            width: 85%;
+            max-width: 350px;
             background-color: #f9f9f9;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            padding: 10px;
             text-align: center;
         }
         .cover-image {
             width: 100%;
             height: auto;
-            border-radius: 15px;
+            border-radius: 10px;
         }
         .title {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
-            margin: 15px 0 5px;
+            margin: 10px 0 5px;
+            text-align: left;
         }
         .artist {
-            font-size: 18px;
+            font-size: 16px;
             color: #b3b3b3;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            text-align: left;
         }
         .progress-bar {
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 10px;
+            background: #666666;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: -100vw 0 0 100vw #9d1dca;
         }
         .controls {
             display: flex;
             justify-content: space-around;
             align-items: center;
-            margin-top: 20px;
+            margin-top: 15px;
         }
         .control-button {
-            font-size: 30px;
+            font-size: 25px;
             color: #9d1dca;
             cursor: pointer;
         }
@@ -58,6 +76,14 @@
             font-size: 12px;
             color: #b3b3b3;
             margin-top: -10px;
+        }
+        /* 去掉长按按钮时的弹出行为 */
+        button, .control-button {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
     </style>
 </head>
@@ -191,3 +217,4 @@
     </script>
 </body>
 </html>
+
