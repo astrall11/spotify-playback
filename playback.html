@@ -52,15 +52,18 @@
             width: 100%;
             height: 100%;
             cursor: pointer;
-            background: transparent;
         }
         .progress-bar::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 0;
-            height: 0;
-            background: transparent;
+            width: 12px;
+            height: 12px;
+            background: #ffffff;
+            border-radius: 50%;
             cursor: pointer;
+            position: relative;
+            z-index: 3;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
         }
         .progress-bar::before {
             content: '';
@@ -71,7 +74,6 @@
             left: 0;
             top: 0;
             z-index: 2;
-            transition: width 0.1s linear;
         }
         .controls {
             display: flex;
@@ -183,28 +185,23 @@
             document.getElementById('title').textContent = track.name;
             document.getElementById('artist').textContent = track.artists.map(artist => artist.name).join(', ');
             document.getElementById('duration').textContent = formatTime(track.duration_ms / 1000);
-            document.getElementById('progressBar').max = track.duration_ms;
+            document.getElementById('progressBar').max = track.duration_ms / 1000;
         }
 
         function updateProgress(state) {
             const progressBar = document.getElementById('progressBar');
             const currentTime = document.getElementById('currentTime');
-            const duration = state.duration;
-            const position = state.position;
+            const progressBarFilled = progressBar.querySelector('::before');
 
-            // 更新进度条值和填充
-            progressBar.value = position;
-            progressBar.max = duration;
-            progressBar.style.setProperty('--progress', `${(position / duration) * 100}%`);
+            progressBar.value = state.position / 1000;
+            currentTime.textContent = formatTime(state.position / 1000);
 
-            // 更新当前时间
-            currentTime.textContent = formatTime(position / 1000);
-
-            // 更新进度条颜色
-            progressBar.style.background = `linear-gradient(to right, #9d1dca ${(position / duration) * 100}%, #e0e0e0 ${(position / duration) * 100}%)`;
+            if (progressBarFilled) {
+                progressBarFilled.style.width = `${(state.position / state.duration) * 100}%`;
+            }
 
             if (!state.paused) {
-                requestAnimationFrame(() => updateProgress({...state, position: position + 1000}));
+                requestAnimationFrame(() => updateProgress(state));
             }
         }
 
@@ -236,7 +233,7 @@
         });
 
         document.getElementById('progressBar').addEventListener('input', (e) => {
-            player.seek(e.target.value);
+            player.seek(e.target.value * 1000);
         });
     </script>
 </body>
