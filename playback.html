@@ -18,6 +18,8 @@
         .player-container {
             width: 85%;
             max-width: 350px;
+            background-color: #f9f9f9;
+            padding: 10px;
             text-align: center;
         }
         .cover-image {
@@ -42,38 +44,25 @@
             margin-bottom: 10px;
             -webkit-appearance: none;
             appearance: none;
-            height: 4px;
+            height: 5px;
             background: #e0e0e0;
             border-radius: 5px;
             overflow: hidden;
-            position: relative;
-        }
-        .progress-bar::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
         }
         .progress-bar::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 12px;
-            height: 12px;
-            background: #ffffff;
+            width: 10px;
+            height: 10px;
+            background: #666666;
             border-radius: 50%;
             cursor: pointer;
-            position: relative;
-            z-index: 3;
-            box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
         }
-        .progress-bar::before {
-            content: '';
-            height: 100%;
-            width: 0;
-            background-color: #9d1dca;
-            position: absolute;
-            left: 0;
-            top: 0;
-            z-index: 2;
+        .progress-bar::-webkit-slider-runnable-track {
+            background: #e0e0e0;
+        }
+        .progress-bar::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #9d1dca 0%, #9d1dca 50%, #e0e0e0 50%, #e0e0e0 100%);
         }
         .controls {
             display: flex;
@@ -93,7 +82,6 @@
             color: #b3b3b3;
             margin-top: -10px;
         }
-        /* 禁用长按按钮的默认行为 */
         button, .control-button {
             -webkit-touch-callout: none;
             -webkit-user-select: none;
@@ -191,14 +179,14 @@
         function updateProgress(state) {
             const progressBar = document.getElementById('progressBar');
             const currentTime = document.getElementById('currentTime');
-            const progressBarFilled = progressBar.querySelector('::before');
+            const duration = document.getElementById('duration');
 
             progressBar.value = state.position / 1000;
             currentTime.textContent = formatTime(state.position / 1000);
+            duration.textContent = formatTime(state.duration / 1000);
 
-            if (progressBarFilled) {
-                progressBarFilled.style.width = `${(state.position / state.duration) * 100}%`;
-            }
+            // Update progress bar color
+            progressBar.style.background = `linear-gradient(to right, #9d1dca 0%, #9d1dca ${(state.position / state.duration) * 100}%, #e0e0e0 ${(state.position / state.duration) * 100}%, #e0e0e0 100%)`;
 
             if (!state.paused) {
                 requestAnimationFrame(() => updateProgress(state));
