@@ -3,23 +3,82 @@
 <head>
     <title>Spotify Player</title>
     <style>
-        /* 将按钮放置在屏幕中间，并增大按钮尺寸 */
-        #playPauseButton {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 40px 80px; /* 增大按钮的尺寸 */
-            font-size: 50px; /* 增大按钮文字的字体 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+            color: #666666;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .player-container {
+            width: 90%;
+            max-width: 400px;
+            background-color: #f9f9f9;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        .cover-image {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0 5px;
+        }
+        .artist {
+            font-size: 18px;
+            color: #b3b3b3;
+            margin-bottom: 20px;
+        }
+        .progress-bar {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .control-button {
+            font-size: 30px;
+            color: #9d1dca;
+            cursor: pointer;
+        }
+        .time-container {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #b3b3b3;
+            margin-top: -10px;
         }
     </style>
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
 </head>
 <body>
-    <button id="playPauseButton">Play</button> <!-- 播放/暂停按钮 -->
-    <!-- 使用 <audio> 元素播放音频 -->
-    <audio id="audioPlayer" controls style="display:none;"></audio>
+    <div class="player-container">
+        <img id="coverImage" class="cover-image" src="default-image.png" alt="Cover Image" />
+        <div id="title" class="title">Title</div>
+        <div id="artist" class="artist">Artist</div>
+        <input type="range" id="progressBar" class="progress-bar" value="0" min="0" max="100">
+        <div class="time-container">
+            <span id="currentTime">00:00</span>
+            <span id="duration">00:00</span>
+        </div>
+        <div class="controls">
+            <span id="previousButton" class="control-button">⏮️</span>
+            <span id="playPauseButton" class="control-button">▶️</span>
+            <span id="nextButton" class="control-button">⏭️</span>
+        </div>
+    </div>
 
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script>
         let player;
         let device_id = null;
@@ -27,133 +86,44 @@
         let token = null;
         let currentUri = null;
         let isPlaying = false;
-        let playRetryAttempts = 0; // 记录尝试次数
-        const maxRetryAttempts = 4; // 最大重试次数
 
-        // Spotify Web Playback SDK 准备就绪时的回调
         window.onSpotifyWebPlaybackSDKReady = () => {
-            // 获取 token 和 URI 参数
             const urlParams = new URLSearchParams(window.location.search);
             token = urlParams.get('access_token');
             currentUri = urlParams.get('uri');
-
-            console.log('Page loaded. Token:', token);
-            console.log('Spotify URI:', currentUri);
 
             if (!token) {
                 console.error('Access token not found in URL');
                 return;
             }
 
-            // 初始化 Spotify Player
             player = new Spotify.Player({
-                name: 'Web Playback SDK Quick Start Player',
+                name: 'Web Playback SDK Player',
                 getOAuthToken: cb => { cb(token); },
                 volume: 0.5
             });
 
-            // 事件监听器
-            player.addListener('initialization_error', ({ message }) => {
-                console.error('Failed to initialize', message);
-            });
-            player.addListener('authentication_error', ({ message }) => {
-                console.error('Failed to authenticate', message);
-            });
-            player.addListener('account_error', ({ message }) => {
-                console.error('Failed to validate Spotify account', message);
-            });
-            player.addListener('playback_error', ({ message }) => {
-                console.error('Failed to perform playback', message);
-            });
-
             player.addListener('ready', ({ device_id }) => {
-                console.log('Connected with Device ID', device_id);
                 window.device_id = device_id;
                 deviceReady = true;
-                updateDeviceStatus();
-
-                // 页面加载后自动开始播放
                 if (currentUri) {
-                    attemptToPlay(currentUri);
+                    playSpotifyTrack(currentUri);
                 }
-            });
-
-            player.addListener('not_ready', ({ device_id }) => {
-                console.log('Device ID is not ready for playback', device_id);
-                deviceReady = false;
-                updateDeviceStatus();
             });
 
             player.addListener('player_state_changed', state => {
-                console.log('Player state changed:', state);
-                isPlaying = !state.paused;
-                updateButtonLabel();
-            });
-
-            document.addEventListener('enterpictureinpicture', () => {
-                console.log('Entered PiP mode');
-                if (!isPlaying && deviceReady) {
-                player.resume().catch(error => console.error('Failed to resume playback in PiP:', error));
+                if (state) {
+                    isPlaying = !state.paused;
+                    updateUI(state.track_window.current_track);
+                    updateProgress(state);
+                    updateButtonLabel();
                 }
             });
 
-
-            console.log('Attempting to connect to the player...');
-            player.connect().then(success => {
-                if (success) {
-                    console.log('The Web Playback SDK successfully connected to Spotify!');
-                } else {
-                    console.error('Failed to connect to Spotify.');
-                }
-            });
-
-            // 监听 PiP 事件
-            document.addEventListener('enterpictureinpicture', () => {
-                console.log('Entered PiP mode');
-                if (!isPlaying && deviceReady) {
-                    player.resume().catch(error => console.error('Failed to resume playback in PiP:', error));
-                }
-            });
-
-            document.addEventListener('leavepictureinpicture', () => {
-                console.log('Left PiP mode');
-                // 可以选择在离开 PiP 模式后自动暂停播放
-                // player.pause().catch(error => console.error('Failed to pause playback after leaving PiP:', error));
-            });
+            player.connect();
         };
 
-        function togglePlayPause() {
-            if (!player || !deviceReady || !window.device_id) {
-                console.error('Player not initialized or not ready');
-                return;
-            }
-
-            if (isPlaying) {
-                player.pause().then(() => {
-                    console.log('Playback paused');
-                    isPlaying = false;
-                    updateButtonLabel();
-                }).catch(error => {
-                    console.error('Error pausing playback:', error);
-                });
-            } else {
-                player.resume().then(() => {
-                    console.log('Playback resumed');
-                    isPlaying = true;
-                    updateButtonLabel();
-                }).catch(error => {
-                    console.error('Error resuming playback:', error);
-                });
-            }
-        }
-
         function playSpotifyTrack(uri) {
-            console.log('Attempting to play track with URI:', uri);
-            if (!player || !deviceReady || !window.device_id) {
-                console.error('Player not initialized or not ready');
-                return;
-            }
-
             fetch(`https://api.spotify.com/v1/me/player/play?device_id=${window.device_id}`, {
                 method: 'PUT',
                 body: JSON.stringify({ uris: [uri] }),
@@ -162,49 +132,62 @@
                     'Authorization': `Bearer ${token}`
                 },
             }).then(response => {
-                if (response.ok) {
-                    console.log('Playback started successfully');
-                    isPlaying = true;
-                    updateButtonLabel();
-                } else {
+                if (!response.ok) {
                     console.error('Playback failed with status:', response.status);
-                    retryPlay(uri); // 失败时重试播放
                 }
-            }).catch(error => {
-                console.error('Error starting playback:', error);
-                retryPlay(uri); // 失败时重试播放
             });
         }
 
-        function retryPlay(uri) {
-            if (playRetryAttempts < maxRetryAttempts) {
-                playRetryAttempts++;
-                console.log(`Retrying to play track (attempt ${playRetryAttempts})...`);
-                setTimeout(() => playSpotifyTrack(uri), 2000); // 每隔2秒重试一次
-            } else {
-                console.error('Max retry attempts reached. Playback failed.');
+        function updateUI(track) {
+            document.getElementById('coverImage').src = track.album.images[0].url;
+            document.getElementById('title').textContent = track.name;
+            document.getElementById('artist').textContent = track.artists.map(artist => artist.name).join(', ');
+            document.getElementById('duration').textContent = formatTime(track.duration_ms / 1000);
+            document.getElementById('progressBar').max = track.duration_ms / 1000;
+        }
+
+        function updateProgress(state) {
+            const progressBar = document.getElementById('progressBar');
+            const currentTime = document.getElementById('currentTime');
+
+            progressBar.value = state.position / 1000;
+            currentTime.textContent = formatTime(state.position / 1000);
+
+            if (!state.paused) {
+                requestAnimationFrame(() => updateProgress(state));
             }
         }
 
-        // 尝试播放，包含重试逻辑
-        function attemptToPlay(uri) {
-            playSpotifyTrack(uri);
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes < 10 ? '0' : ''}${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
         }
 
-        // 更新按钮标签
         function updateButtonLabel() {
             const button = document.getElementById('playPauseButton');
-            button.textContent = isPlaying ? 'Pause' : 'Play';
+            button.textContent = isPlaying ? '⏸️' : '▶️';
         }
 
-        // 显示设备状态
-        function updateDeviceStatus() {
-            console.log('Device Ready State:', deviceReady);
-            console.log('Device ID:', window.device_id);
-        }
+        document.getElementById('playPauseButton').addEventListener('click', () => {
+            if (isPlaying) {
+                player.pause();
+            } else {
+                player.resume();
+            }
+        });
 
-        // 绑定按钮点击事件
-        document.getElementById('playPauseButton').addEventListener('click', togglePlayPause);
+        document.getElementById('previousButton').addEventListener('click', () => {
+            player.previousTrack();
+        });
+
+        document.getElementById('nextButton').addEventListener('click', () => {
+            player.nextTrack();
+        });
+
+        document.getElementById('progressBar').addEventListener('input', (e) => {
+            player.seek(e.target.value * 1000);
+        });
     </script>
 </body>
 </html>
