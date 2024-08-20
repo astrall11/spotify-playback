@@ -1,8 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify Player</title>
     <style>
         body {
@@ -16,8 +14,8 @@
             margin: 0;
         }
         .player-container {
-            width: 100%;
-            max-width: 380px;
+            width: 90%;
+            max-width: 400px;
             background-color: #f9f9f9;
             border-radius: 20px;
             padding: 20px;
@@ -28,50 +26,24 @@
             width: 100%;
             height: auto;
             border-radius: 15px;
-            margin-bottom: 20px;
         }
         .title {
             font-size: 24px;
             font-weight: bold;
-            text-align: left;
             margin: 15px 0 5px;
-            color: #666666;
         }
         .artist {
             font-size: 18px;
             color: #b3b3b3;
-            text-align: left;
             margin-bottom: 20px;
         }
         .progress-bar {
             width: 100%;
-            margin-bottom: 10px;
-            -webkit-appearance: none;
-            appearance: none;
-            height: 8px;
-            background-color: #e0e0e0;
-            border-radius: 5px;
-            outline: none;
-        }
-        .progress-bar::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            background-color: #9d1dca;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        .time-container {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #b3b3b3;
-            margin-top: -5px;
+            margin-bottom: 15px;
         }
         .controls {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
             align-items: center;
             margin-top: 20px;
         }
@@ -79,8 +51,13 @@
             font-size: 30px;
             color: #9d1dca;
             cursor: pointer;
-            flex: 1;
-            text-align: center;
+        }
+        .time-container {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #b3b3b3;
+            margin-top: -10px;
         }
     </style>
 </head>
