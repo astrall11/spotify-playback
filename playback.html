@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Spotify Player</title>
     <style>
         body {
@@ -14,6 +14,7 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            overflow: hidden; /* 禁用页面滚动 */
         }
         .player-container {
             width: 85%;
@@ -47,7 +48,7 @@
             cursor: pointer;
         }
         .progress-filled {
-            background-color: #9d1dca; /* 已播放部分的颜色 */
+            background-color: #9d1dca;
             height: 100%;
             width: 0;
             position: absolute;
@@ -55,6 +56,7 @@
             top: 0;
             z-index: 2;
             pointer-events: none;
+            transition: width 0.1s ease; /* 平滑的宽度变化 */
         }
         .progress-bar {
             -webkit-appearance: none;
@@ -106,12 +108,18 @@
         }
     </style>
     <script>
-        // 禁用网页搜索功能
+        // 禁用网页缩放功能
         document.addEventListener('keydown', function(event) {
-            if (event.ctrlKey && event.key === 'f') {
-                event.preventDefault();  // 禁止Ctrl+F
+            if (event.ctrlKey && (event.key === '+' || event.key === '-' || event.key === '0')) {
+                event.preventDefault();  // 禁止Ctrl+加减或Ctrl+0进行缩放
             }
         });
+
+        window.addEventListener('wheel', function(event) {
+            if (event.ctrlKey) {
+                event.preventDefault();  // 禁止Ctrl+滚轮缩放
+            }
+        }, { passive: false });
     </script>
 </head>
 <body>
@@ -245,37 +253,38 @@
         }
 
         document.getElementById('playPauseButton').addEventListener('click', () => {
-            if (isPlaying) {
-                player.pause();
-            } else {
-                player.resume();
-            }
-        });
+    if (isPlaying) {
+        player.pause();
+    } else {
+        player.resume();
+    }
+});
 
-        document.getElementById('previousButton').addEventListener('click', () => {
-            player.previousTrack();
-        });
+document.getElementById('previousButton').addEventListener('click', () => {
+    player.previousTrack();
+});
 
-        document.getElementById('nextButton').addEventListener('click', () => {
-            player.nextTrack();
-        });
+document.getElementById('nextButton').addEventListener('click', () => {
+    player.nextTrack();
+});
 
-        document.getElementById('progressBar').addEventListener('input', (e) => {
-            clearInterval(progressInterval);  // 暂停自动进度更新
-            const newPosition = e.target.value * 1000;
-            updateProgress(newPosition, duration);  // 实时更新UI
-        });
+document.getElementById('progressBar').addEventListener('input', (e) => {
+    clearInterval(progressInterval);  // 暂停自动进度更新
+    const newPosition = e.target.value * 1000;
+    updateProgress(newPosition, duration);  // 实时更新UI
+});
 
-       
-
-        document.getElementById('progressBar').addEventListener('change', (e) => {
-            const newPosition = e.target.value * 1000;
-            player.seek(newPosition).then(() => {
-                if (isPlaying) {
-                    startProgressInterval(newPosition, duration);  // 重新启动进度更新
-                }
-            });
-        });
+document.getElementById('progressBar').addEventListener('change', (e) => {
+    const newPosition = e.target.value * 1000;
+    player.seek(newPosition).then(() => {
+        if (isPlaying) {
+            startProgressInterval(newPosition, duration);  // 重新启动进度更新
+        }
+    });
+});
     </script>
 </body>
 </html>
+
+
+        
