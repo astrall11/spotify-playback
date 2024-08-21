@@ -13,7 +13,7 @@
             display: flex;
             justify-content: center;
             align-items: flex-start; /* 将 align-items 从 center 改为 flex-start */
-            padding-top: 55px; /* 视需要添加额外的顶部填充 */
+            padding-top: 40px; /* 视需要添加额外的顶部填充 */
             height: 100vh;
             margin: 0;
             overflow: hidden;
@@ -70,9 +70,11 @@
             background: transparent;
             position: absolute;
             top: 0;
-            left: 0;
+            left: 50%; /* 让滑块左侧对齐到容器的中间 */
+            transform: translateX(-50%); /* 将滑块左侧再向左移动50%，使其完全居中 */
             z-index: 3;
         }
+
         .progress-bar::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
