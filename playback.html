@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify Player</title>
     <style>
         body {
@@ -14,7 +14,6 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            overflow: hidden; /* 禁用页面滚动 */
         }
         .player-container {
             width: 85%;
@@ -48,7 +47,7 @@
             cursor: pointer;
         }
         .progress-filled {
-            background-color: #9d1dca;
+            background-color: #9d1dca; /* 已播放部分的颜色 */
             height: 100%;
             width: 0;
             position: absolute;
@@ -107,18 +106,12 @@
         }
     </style>
     <script>
-        // 禁用网页缩放功能
+        // 禁用网页搜索功能
         document.addEventListener('keydown', function(event) {
-            if (event.ctrlKey && (event.key === '+' || event.key === '-' || event.key === '0')) {
-                event.preventDefault();  // 禁止Ctrl+加减或Ctrl+0进行缩放
+            if (event.ctrlKey && event.key === 'f') {
+                event.preventDefault();  // 禁止Ctrl+F
             }
         });
-
-        window.addEventListener('wheel', function(event) {
-            if (event.ctrlKey) {
-                event.preventDefault();  // 禁止Ctrl+滚轮缩放
-            }
-        }, { passive: false });
     </script>
 </head>
 <body>
@@ -227,7 +220,7 @@
             currentTime.textContent = formatTime(currentPositionInSeconds);
 
             const progressPercentage = (currentPositionInSeconds / (duration / 1000)) * 100;
-            progressFilled.style.width = `${Math.min(progressPercentage, 100)}%`;
+            progressFilled.style.width = `${progressPercentage}%`;
             progressFilled.style.backgroundColor = '#9d1dca'; // 紫色
         }
 
@@ -263,9 +256,6 @@
             player.previousTrack();
         });
 
-
-
-
         document.getElementById('nextButton').addEventListener('click', () => {
             player.nextTrack();
         });
@@ -275,6 +265,8 @@
             const newPosition = e.target.value * 1000;
             updateProgress(newPosition, duration);  // 实时更新UI
         });
+
+       
 
         document.getElementById('progressBar').addEventListener('change', (e) => {
             const newPosition = e.target.value * 1000;
