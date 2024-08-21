@@ -37,25 +37,21 @@
             margin-bottom: 15px;
             text-align: left;
         }
-        .progress-bar-container {
+        .progress-bar {
             width: 100%;
-            position: relative;
+            margin-bottom: 10px;
+            -webkit-appearance: none;
+            appearance: none;
             height: 4px;
             background: #e0e0e0;
             border-radius: 5px;
-            margin-bottom: 10px;
-            cursor: pointer;
+            overflow: hidden;
+            position: relative;
         }
-        .progress-bar {
-            -webkit-appearance: none;
-            appearance: none;
+        .progress-bar::-webkit-slider-runnable-track {
             width: 100%;
             height: 100%;
-            background: transparent;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 3;
+            cursor: pointer;
         }
         .progress-bar::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -70,7 +66,7 @@
             box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
         }
         .progress-filled {
-            background-color: #9d1dca; /* 播放过的部分的颜色 */
+            background-color: #9d1dca;
             height: 100%;
             width: 0;
             position: absolute;
@@ -97,7 +93,6 @@
             color: #b3b3b3;
             margin-top: -10px;
         }
-        /* 禁用长按按钮的默认行为 */
         button, .control-button {
             -webkit-touch-callout: none;
             -webkit-user-select: none;
@@ -112,10 +107,7 @@
         <img id="coverImage" class="cover-image" src="default-image.png" alt="Cover Image" />
         <div id="title" class="title">Title</div>
         <div id="artist" class="artist">Artist</div>
-        <div class="progress-bar-container">
-            <div id="progressFilled" class="progress-filled"></div>
-            <input type="range" id="progressBar" class="progress-bar" value="0" min="0" max="100">
-        </div>
+        <input type="range" id="progressBar" class="progress-bar" value="0" min="0" max="100">
         <div class="time-container">
             <span id="currentTime">00:00</span>
             <span id="duration">00:00</span>
@@ -129,115 +121,142 @@
 
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script>
-       // Initialize variables
-let player;
-let isPlaying = false;
-let isSeeking = false;
-let currentPosition = 0;
-let duration = 0;
+        let player;
+        let device_id = null;
+        let deviceReady = false;
+        let token = null;
+        let currentUri = null;
+        let isPlaying = false;
+        let duration = 0;
+        let progressInterval;
 
-window.onSpotifyWebPlaybackSDKReady = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('access_token');
-    const currentUri = urlParams.get('uri');
+        window.onSpotifyWebPlaybackSDKReady = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            token = urlParams.get('access_token');
+            currentUri = urlParams.get('uri');
 
-    player = new Spotify.Player({
-        name: 'Web Playback SDK Player',
-        getOAuthToken: cb => { cb(token); },
-        volume: 0.5
-    });
+            if (!token) {
+                console.error('Access token not found in URL');
+                return;
+            }
 
-    player.addListener('ready', ({ device_id }) => {
-        if (currentUri) {
-            playSpotifyTrack(currentUri, device_id);
+            player = new Spotify.Player({
+                name: 'Web Playback SDK Player',
+                getOAuthToken: cb => { cb(token); },
+                volume: 0.5
+            });
+
+            player.addListener('ready', ({ device_id }) => {
+                window.device_id = device_id;
+                deviceReady = true;
+                if (currentUri) {
+                    playSpotifyTrack(currentUri);
+                }
+            });
+
+            player.addListener('player_state_changed', state => {
+                if (state) {
+                    isPlaying = !state.paused;
+                    updateUI(state.track_window.current_track);
+                    updateProgress(state.position, state.duration);
+                    updateButtonLabel();
+
+                    if (isPlaying && !progressInterval) {
+                        startProgressInterval(state.position, state.duration);
+                    } else if (!isPlaying && progressInterval) {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                    }
+                }
+            });
+
+            player.connect();
+        };
+
+        function playSpotifyTrack(uri) {
+            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${window.device_id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ uris: [uri] }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+            }).then(response => {
+                if (!response.ok) {
+                    console.error('Playback failed with status:', response.status);
+                }
+            });
         }
-    });
 
-    player.addListener('player_state_changed', state => {
-        if (!state) return;
-
-        isPlaying = !state.paused;
-        duration = state.duration / 1000; // Convert to seconds
-        currentPosition = state.position / 1000; // Convert to seconds
-        updateUI(state.track_window.current_track);
-        updateButtonLabel();
-
-        if (!isSeeking) {
-            updateProgress();
+        function updateUI(track) {
+            document.getElementById('coverImage').src = track.album.images[0].url;
+            document.getElementById('title').textContent = track.name;
+            document.getElementById('artist').textContent = track.artists.map(artist => artist.name).join(', ');
+            document.getElementById('duration').textContent = formatTime(track.duration_ms / 1000);
+            document.getElementById('progressBar').max = track.duration_ms / 1000;
+            duration = track.duration_ms / 1000;
         }
-    });
 
-    player.connect();
-};
+        function updateProgress(position, duration) {
+            const progressBar = document.getElementById('progressBar');
+            const currentTime = document.getElementById('currentTime');
 
-function playSpotifyTrack(uri, device_id) {
-    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ uris: [uri] }),
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-    }).then(response => {
-        if (!response.ok) {
-            console.error('Playback failed with status:', response.status);
+            progressBar.value = position / 1000;
+            currentTime.textContent = formatTime(position / 1000);
+
+            const progressFilled = progressBar.querySelector('.progress-filled');
+            if (progressFilled) {
+                progressFilled.style.width = `${(position / duration) * 100}%`;
+            }
         }
-    });
-}
 
-function updateUI(track) {
-    document.getElementById('coverImage').src = track.album.images[0].url;
-    document.getElementById('title').textContent = track.name;
-    document.getElementById('artist').textContent = track.artists.map(artist => artist.name).join(', ');
-    document.getElementById('duration').textContent = formatTime(duration);
-    document.getElementById('progressBar').max = duration;
-}
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes < 10 ? '0' : ''}${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
 
-function updateProgress() {
-    const progressBar = document.getElementById('progressBar');
-    const progressFilled = document.getElementById('progressFilled');
-    const currentTime = document.getElementById('currentTime');
+        function updateButtonLabel() {
+            const button = document.getElementById('playPauseButton');
+            button.textContent = isPlaying ? '⏸️' : '▶️';
+        }
 
-    currentTime.textContent = formatTime(currentPosition);
-    progressBar.value = currentPosition;
-    progressFilled.style.width = `${(currentPosition / duration) * 100}%`;
+        function startProgressInterval(position, duration) {
+            progressInterval = setInterval(() => {
+                if (!isPlaying) return;
+                position += 1000; // Increment by 1 second
+                updateProgress(position, duration);
+            }, 1000);
+        }
 
-    if (isPlaying && !isSeeking) {
-        currentPosition += 0.1; // Assuming this function is called every 100ms
-        requestAnimationFrame(updateProgress);
-    }
-}
+        document.getElementById('playPauseButton').addEventListener('click', () => {
+            if (isPlaying) {
+                player.pause();
+            } else {
+                player.resume();
+            }
+        });
 
-function formatTime(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes < 10 ? '0' : ''}${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-}
+        document.getElementById('previousButton').addEventListener('click', () => {
+            player.previousTrack();
+        });
 
-function updateButtonLabel() {
-    const button = document.getElementById('playPauseButton');
-    button.textContent = isPlaying ? '⏸️' : '▶️';
-}
+        document.getElementById('nextButton').addEventListener('click', () => {
+            player.nextTrack();
+        });
 
-document.getElementById('playPauseButton').addEventListener('click', () => {
-    if (isPlaying) {
-        player.pause();
-    } else {
-        player.resume();
-    }
-});
+        document.getElementById('progressBar').addEventListener('input', (e) => {
+            clearInterval(progressInterval);
+            const newPosition = e.target.value * 1000;
+            player.seek(newPosition);
+        });
 
-document.getElementById('progressBar').addEventListener('input', (e) => {
-    isSeeking = true;
-    currentPosition = e.target.value;
-    updateProgress(); // Immediately reflect the change in the UI
-});
-
-document.getElementById('progressBar').addEventListener('change', (e) => {
-    isSeeking = false;
-    player.seek(currentPosition * 1000); // Convert to milliseconds
-});
-
+        document.getElementById('progressBar').addEventListener('change', () => {
+            if (isPlaying) {
+                player.resume();
+            }
+        });
     </script>
 </body>
 </html>
+
