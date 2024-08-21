@@ -56,7 +56,6 @@
             top: 0;
             z-index: 2;
             pointer-events: none;
-            transition: width 0.1s ease; /* 平滑的宽度变化 */
         }
         .progress-bar {
             -webkit-appearance: none;
@@ -228,7 +227,7 @@
             currentTime.textContent = formatTime(currentPositionInSeconds);
 
             const progressPercentage = (currentPositionInSeconds / (duration / 1000)) * 100;
-            progressFilled.style.width = `${progressPercentage}%`;
+            progressFilled.style.width = `${Math.min(progressPercentage, 100)}%`;
             progressFilled.style.backgroundColor = '#9d1dca'; // 紫色
         }
 
@@ -253,38 +252,38 @@
         }
 
         document.getElementById('playPauseButton').addEventListener('click', () => {
-    if (isPlaying) {
-        player.pause();
-    } else {
-        player.resume();
-    }
-});
+            if (isPlaying) {
+                player.pause();
+            } else {
+                player.resume();
+            }
+        });
 
-document.getElementById('previousButton').addEventListener('click', () => {
-    player.previousTrack();
-});
+        document.getElementById('previousButton').addEventListener('click', () => {
+            player.previousTrack();
+        });
 
-document.getElementById('nextButton').addEventListener('click', () => {
-    player.nextTrack();
-});
 
-document.getElementById('progressBar').addEventListener('input', (e) => {
-    clearInterval(progressInterval);  // 暂停自动进度更新
-    const newPosition = e.target.value * 1000;
-    updateProgress(newPosition, duration);  // 实时更新UI
-});
 
-document.getElementById('progressBar').addEventListener('change', (e) => {
-    const newPosition = e.target.value * 1000;
-    player.seek(newPosition).then(() => {
-        if (isPlaying) {
-            startProgressInterval(newPosition, duration);  // 重新启动进度更新
-        }
-    });
-});
+
+        document.getElementById('nextButton').addEventListener('click', () => {
+            player.nextTrack();
+        });
+
+        document.getElementById('progressBar').addEventListener('input', (e) => {
+            clearInterval(progressInterval);  // 暂停自动进度更新
+            const newPosition = e.target.value * 1000;
+            updateProgress(newPosition, duration);  // 实时更新UI
+        });
+
+        document.getElementById('progressBar').addEventListener('change', (e) => {
+            const newPosition = e.target.value * 1000;
+            player.seek(newPosition).then(() => {
+                if (isPlaying) {
+                    startProgressInterval(newPosition, duration);  // 重新启动进度更新
+                }
+            });
+        });
     </script>
 </body>
 </html>
-
-
-        
