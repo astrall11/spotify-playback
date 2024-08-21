@@ -17,7 +17,6 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
-            visibility: hidden; /* 初始隐藏页面内容 */
         }
         .player-container {
             width: 85%;
@@ -28,6 +27,7 @@
             width: 100%;
             height: auto;
             border-radius: 10px;
+            margin-bottom: 20px;
         }
         .title {
             font-size: 20px;
@@ -123,9 +123,7 @@
             }
         }, { passive: false });
 
-        window.addEventListener('load', function() {
-            document.body.style.visibility = 'visible';
-        });
+        
         
     </script>
 </head>
