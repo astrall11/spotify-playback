@@ -1,262 +1,109 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotify Player</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #fff;
-            color: #666666;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+// Initialize variables
+let player;
+let isPlaying = false;
+let isSeeking = false;
+let currentPosition = 0;
+let duration = 0;
+
+window.onSpotifyWebPlaybackSDKReady = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('access_token');
+    const currentUri = urlParams.get('uri');
+
+    player = new Spotify.Player({
+        name: 'Web Playback SDK Player',
+        getOAuthToken: cb => { cb(token); },
+        volume: 0.5
+    });
+
+    player.addListener('ready', ({ device_id }) => {
+        if (currentUri) {
+            playSpotifyTrack(currentUri, device_id);
         }
-        .player-container {
-            width: 85%;
-            max-width: 350px;
-            text-align: center;
+    });
+
+    player.addListener('player_state_changed', state => {
+        if (!state) return;
+
+        isPlaying = !state.paused;
+        duration = state.duration / 1000; // Convert to seconds
+        currentPosition = state.position / 1000; // Convert to seconds
+        updateUI(state.track_window.current_track);
+        updateButtonLabel();
+
+        if (!isSeeking) {
+            updateProgress();
         }
-        .cover-image {
-            width: 100%;
-            height: auto;
-            border-radius: 10px;
+    });
+
+    player.connect();
+};
+
+function playSpotifyTrack(uri, device_id) {
+    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ uris: [uri] }),
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+    }).then(response => {
+        if (!response.ok) {
+            console.error('Playback failed with status:', response.status);
         }
-        .title {
-            font-size: 20px;
-            font-weight: bold;
-            margin: 10px 0 5px;
-            text-align: left;
-        }
-        .artist {
-            font-size: 16px;
-            color: #b3b3b3;
-            margin-bottom: 15px;
-            text-align: left;
-        }
-        .progress-bar-container {
-            width: 100%;
-            position: relative;
-            height: 4px;
-            background: #e0e0e0;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            cursor: pointer;
-        }
-        .progress-bar {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 3;
-        }
-        .progress-bar::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 12px;
-            height: 12px;
-            background: #ffffff;
-            border-radius: 50%;
-            cursor: pointer;
-            position: relative;
-            z-index: 3;
-            box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-        }
-        .progress-filled {
-            background-color: #9d1dca; /* 播放过的部分的颜色 */
-            height: 100%;
-            width: 0;
-            position: absolute;
-            left: 0;
-            top: 0;
-            z-index: 2;
-            pointer-events: none;
-        }
-        .controls {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            margin-top: 15px;
-        }
-        .control-button {
-            font-size: 25px;
-            color: #9d1dca;
-            cursor: pointer;
-        }
-        .time-container {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #b3b3b3;
-            margin-top: -10px;
-        }
-        /* 禁用长按按钮的默认行为 */
-        button, .control-button {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="player-container">
-        <img id="coverImage" class="cover-image" src="default-image.png" alt="Cover Image" />
-        <div id="title" class="title">Title</div>
-        <div id="artist" class="artist">Artist</div>
-        <div class="progress-bar-container">
-            <div id="progressFilled" class="progress-filled"></div>
-            <input type="range" id="progressBar" class="progress-bar" value="0" min="0" max="100">
-        </div>
-        <div class="time-container">
-            <span id="currentTime">00:00</span>
-            <span id="duration">00:00</span>
-        </div>
-        <div class="controls">
-            <span id="previousButton" class="control-button">⏮️</span>
-            <span id="playPauseButton" class="control-button">▶️</span>
-            <span id="nextButton" class="control-button">⏭️</span>
-        </div>
-    </div>
+    });
+}
 
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
-    <script>
-        let player;
-        let device_id = null;
-        let token = null;
-        let currentUri = null;
-        let isPlaying = false;
-        let isSeeking = false;
+function updateUI(track) {
+    document.getElementById('coverImage').src = track.album.images[0].url;
+    document.getElementById('title').textContent = track.name;
+    document.getElementById('artist').textContent = track.artists.map(artist => artist.name).join(', ');
+    document.getElementById('duration').textContent = formatTime(duration);
+    document.getElementById('progressBar').max = duration;
+}
 
-        window.onSpotifyWebPlaybackSDKReady = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            token = urlParams.get('access_token');
-            currentUri = urlParams.get('uri');
+function updateProgress() {
+    const progressBar = document.getElementById('progressBar');
+    const progressFilled = document.getElementById('progressFilled');
+    const currentTime = document.getElementById('currentTime');
 
-            if (!token) {
-                console.error('Access token not found in URL');
-                return;
-            }
+    currentTime.textContent = formatTime(currentPosition);
+    progressBar.value = currentPosition;
+    progressFilled.style.width = `${(currentPosition / duration) * 100}%`;
 
-            player = new Spotify.Player({
-                name: 'Web Playback SDK Player',
-                getOAuthToken: cb => { cb(token); },
-                volume: 0.5
-            });
+    if (isPlaying && !isSeeking) {
+        currentPosition += 0.1; // Assuming this function is called every 100ms
+        requestAnimationFrame(updateProgress);
+    }
+}
 
-            player.addListener('ready', ({ device_id }) => {
-                window.device_id = device_id;
-                if (currentUri) {
-                    playSpotifyTrack(currentUri);
-                }
-            });
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes < 10 ? '0' : ''}${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+}
 
-            player.addListener('player_state_changed', state => {
-                if (state) {
-                    isPlaying = !state.paused;
-                    updateUI(state.track_window.current_track);
-                    if (!isSeeking) {
-                        updateProgress(state);
-                    }
-                    updateButtonLabel();
-                }
-            });
+function updateButtonLabel() {
+    const button = document.getElementById('playPauseButton');
+    button.textContent = isPlaying ? '⏸️' : '▶️';
+}
 
-            player.connect();
-        };
+document.getElementById('playPauseButton').addEventListener('click', () => {
+    if (isPlaying) {
+        player.pause();
+    } else {
+        player.resume();
+    }
+});
 
-        function playSpotifyTrack(uri) {
-            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${window.device_id}`, {
-                method: 'PUT',
-                body: JSON.stringify({ uris: [uri] }),
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-            }).then(response => {
-                if (!response.ok) {
-                    console.error('Playback failed with status:', response.status);
-                }
-            });
-        }
+document.getElementById('progressBar').addEventListener('input', (e) => {
+    isSeeking = true;
+    currentPosition = e.target.value;
+    updateProgress(); // Immediately reflect the change in the UI
+});
 
-        function updateUI(track) {
-            document.getElementById('coverImage').src = track.album.images[0].url;
-            document.getElementById('title').textContent = track.name;
-            document.getElementById('artist').textContent = track.artists.map(artist => artist.name).join(', ');
-            document.getElementById('duration').textContent = formatTime(track.duration_ms / 1000);
-            document.getElementById('progressBar').max = track.duration_ms / 1000;
-        }
+document.getElementById('progressBar').addEventListener('change', (e) => {
+    isSeeking = false;
+    player.seek(currentPosition * 1000); // Convert to milliseconds
+});
 
-        function updateProgress(state) {
-            const progressBar = document.getElementById('progressBar');
-            const progressFilled = document.getElementById('progressFilled');
-            const currentTime = document.getElementById('currentTime');
-
-            const progress = state.position / 1000;
-            progressBar.value = progress;
-            currentTime.textContent = formatTime(progress);
-
-            const progressPercentage = (state.position / state.duration) * 100;
-            progressFilled.style.width = `${progressPercentage}%`;
-
-            if (!state.paused && !isSeeking) {
-                requestAnimationFrame(() => updateProgress(state));
-            }
-        }
-
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = Math.floor(seconds % 60);
-            return `${minutes < 10 ? '0' : ''}${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-        }
-
-        function updateButtonLabel() {
-            const button = document.getElementById('playPauseButton');
-            button.textContent = isPlaying ? '⏸️' : '▶️';
-        }
-
-        document.getElementById('playPauseButton').addEventListener('click', () => {
-            if (isPlaying) {
-                player.pause();
-            } else {
-                player.resume();
-            }
-        });
-
-        document.getElementById('previousButton').addEventListener('click', () => {
-            player.previousTrack();
-        });
-
-        document.getElementById('nextButton').addEventListener('click', () => {
-            player.nextTrack();
-        });
-
-        const progressBar = document.getElementById('progressBar');
-
-        progressBar.addEventListener('input', (e) => {
-            isSeeking = true;
-            const value = e.target.value;
-            const progressFilled = document.getElementById('progressFilled');
-            const currentTime = document.getElementById('currentTime');
-            progressFilled.style.width = `${(value / progressBar.max) * 100}%`;
-            currentTime.textContent = formatTime(value);
-        });
-
-        progressBar.addEventListener('change', (e) => {
-            const value = e.target.value;
-            player.seek(value * 1000).then(() => {
-                isSeeking = false;
-            });
-        });
-    </script>
-</body>
-</html>
