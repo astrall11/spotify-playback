@@ -17,6 +17,7 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
+            visibility: hidden; /* 初始隐藏页面内容 */
         }
         .player-container {
             width: 85%;
@@ -121,6 +122,11 @@
                 event.preventDefault();  // 禁止Ctrl+滚轮缩放
             }
         }, { passive: false });
+
+        window.addEventListener('load', function() {
+            document.body.style.visibility = 'visible';
+        });
+        
     </script>
 </head>
 <body>
