@@ -37,21 +37,35 @@
             margin-bottom: 15px;
             text-align: left;
         }
-        .progress-bar {
+        .progress-bar-container {
             width: 100%;
-            margin-bottom: 10px;
-            -webkit-appearance: none;
-            appearance: none;
+            position: relative;
             height: 4px;
             background: #e0e0e0;
             border-radius: 5px;
-            overflow: hidden;
-            position: relative;
+            margin-bottom: 10px;
+            cursor: pointer;
         }
-        .progress-bar::-webkit-slider-runnable-track {
+        .progress-filled {
+            background-color: #9d1dca; /* 播放过的部分的颜色 */
+            height: 100%;
+            width: 0;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .progress-bar {
+            -webkit-appearance: none;
+            appearance: none;
             width: 100%;
             height: 100%;
-            cursor: pointer;
+            background: transparent;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 3;
         }
         .progress-bar::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -64,16 +78,6 @@
             position: relative;
             z-index: 3;
             box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-        }
-        .progress-filled {
-            background-color: #9d1dca;
-            height: 100%;
-            width: 0;
-            position: absolute;
-            left: 0;
-            top: 0;
-            z-index: 2;
-            pointer-events: none;
         }
         .controls {
             display: flex;
@@ -101,13 +105,24 @@
             user-select: none;
         }
     </style>
+    <script>
+        // 禁用网页搜索功能
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'f') {
+                event.preventDefault();  // 禁止Ctrl+F
+            }
+        });
+    </script>
 </head>
 <body>
     <div class="player-container">
         <img id="coverImage" class="cover-image" src="default-image.png" alt="Cover Image" />
         <div id="title" class="title">Title</div>
         <div id="artist" class="artist">Artist</div>
-        <input type="range" id="progressBar" class="progress-bar" value="0" min="0" max="100">
+        <div class="progress-bar-container">
+            <div id="progressFilled" class="progress-filled"></div>
+            <input type="range" id="progressBar" class="progress-bar" value="0" min="0" max="100">
+        </div>
         <div class="time-container">
             <span id="currentTime">00:00</span>
             <span id="duration">00:00</span>
@@ -123,7 +138,6 @@
     <script>
         let player;
         let device_id = null;
-        let deviceReady = false;
         let token = null;
         let currentUri = null;
         let isPlaying = false;
@@ -148,15 +162,15 @@
 
             player.addListener('ready', ({ device_id }) => {
                 window.device_id = device_id;
-                deviceReady = true;
                 if (currentUri) {
-                    playSpotifyTrack(currentUri);
+                    playSpotifyTrack(currentUri, device_id);
                 }
             });
 
             player.addListener('player_state_changed', state => {
                 if (state) {
                     isPlaying = !state.paused;
+                    duration = state.duration / 1000;
                     updateUI(state.track_window.current_track);
                     updateProgress(state.position, state.duration);
                     updateButtonLabel();
@@ -173,8 +187,8 @@
             player.connect();
         };
 
-        function playSpotifyTrack(uri) {
-            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${window.device_id}`, {
+        function playSpotifyTrack(uri, device_id) {
+            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
                 method: 'PUT',
                 body: JSON.stringify({ uris: [uri] }),
                 headers: {
@@ -192,22 +206,21 @@
             document.getElementById('coverImage').src = track.album.images[0].url;
             document.getElementById('title').textContent = track.name;
             document.getElementById('artist').textContent = track.artists.map(artist => artist.name).join(', ');
-            document.getElementById('duration').textContent = formatTime(track.duration_ms / 1000);
-            document.getElementById('progressBar').max = track.duration_ms / 1000;
-            duration = track.duration_ms / 1000;
+            document.getElementById('duration').textContent = formatTime(duration);
+            document.getElementById('progressBar').max = duration;
         }
 
         function updateProgress(position, duration) {
             const progressBar = document.getElementById('progressBar');
+            const progressFilled = document.getElementById('progressFilled');
             const currentTime = document.getElementById('currentTime');
 
             progressBar.value = position / 1000;
             currentTime.textContent = formatTime(position / 1000);
 
-            const progressFilled = progressBar.querySelector('.progress-filled');
-            if (progressFilled) {
-                progressFilled.style.width = `${(position / duration) * 100}%`;
-            }
+            const progressPercentage = (position / duration) * 100;
+            progressFilled.style.width = `${progressPercentage}%`;
+            progressFilled.style.backgroundColor = '#9d1dca'; // 紫色
         }
 
         function formatTime(seconds) {
@@ -224,7 +237,7 @@
         function startProgressInterval(position, duration) {
             progressInterval = setInterval(() => {
                 if (!isPlaying) return;
-                position += 1000; // Increment by 1 second
+                position += 1000; // 每秒更新
                 updateProgress(position, duration);
             }, 1000);
         }
@@ -259,4 +272,3 @@
     </script>
 </body>
 </html>
-
