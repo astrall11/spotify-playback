@@ -135,6 +135,7 @@
         let token = null;
         let currentUri = null;
         let isPlaying = false;
+        let isSeeking = false;
 
         window.onSpotifyWebPlaybackSDKReady = () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -164,7 +165,9 @@
                 if (state) {
                     isPlaying = !state.paused;
                     updateUI(state.track_window.current_track);
-                    updateProgress(state);
+                    if (!isSeeking) {
+                        updateProgress(state);
+                    }
                     updateButtonLabel();
                 }
             });
@@ -207,7 +210,7 @@
             const progressPercentage = (state.position / state.duration) * 100;
             progressFilled.style.width = `${progressPercentage}%`;
 
-            if (!state.paused) {
+            if (!state.paused && !isSeeking) {
                 requestAnimationFrame(() => updateProgress(state));
             }
         }
@@ -239,11 +242,20 @@
             player.nextTrack();
         });
 
-        document.getElementById('progressBar').addEventListener('input', (e) => {
-            const progressBar = e.target;
+        const progressBar = document.getElementById('progressBar');
+
+        progressBar.addEventListener('input', (e) => {
+            const value = e.target.value;
             const progressFilled = document.getElementById('progressFilled');
-            const value = progressBar.value;
+            const currentTime = document.getElementById('currentTime');
+            isSeeking = true;
             progressFilled.style.width = `${(value / progressBar.max) * 100}%`;
+            currentTime.textContent = formatTime(value);
+        });
+
+        progressBar.addEventListener('change', (e) => {
+            const value = e.target.value;
+            isSeeking = false;
             player.seek(value * 1000);
         });
     </script>
