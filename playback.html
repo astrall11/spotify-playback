@@ -37,21 +37,25 @@
             margin-bottom: 15px;
             text-align: left;
         }
-        .progress-bar {
+        .progress-bar-container {
             width: 100%;
-            margin-bottom: 10px;
-            -webkit-appearance: none;
-            appearance: none;
+            position: relative;
             height: 4px;
             background: #e0e0e0;
             border-radius: 5px;
-            overflow: hidden;
-            position: relative;
+            margin-bottom: 10px;
+            cursor: pointer;
         }
-        .progress-bar::-webkit-slider-runnable-track {
+        .progress-bar {
+            -webkit-appearance: none;
+            appearance: none;
             width: 100%;
             height: 100%;
-            cursor: pointer;
+            background: transparent;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 3;
         }
         .progress-bar::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -65,15 +69,15 @@
             z-index: 3;
             box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
         }
-        .progress-bar::before {
-            content: '';
+        .progress-filled {
+            background-color: #9d1dca; /* 播放过的部分的颜色 */
             height: 100%;
             width: 0;
-            background-color: #9d1dca;
             position: absolute;
             left: 0;
             top: 0;
             z-index: 2;
+            pointer-events: none;
         }
         .controls {
             display: flex;
@@ -108,7 +112,10 @@
         <img id="coverImage" class="cover-image" src="default-image.png" alt="Cover Image" />
         <div id="title" class="title">Title</div>
         <div id="artist" class="artist">Artist</div>
-        <input type="range" id="progressBar" class="progress-bar" value="0" min="0" max="100">
+        <div class="progress-bar-container">
+            <div id="progressFilled" class="progress-filled"></div>
+            <input type="range" id="progressBar" class="progress-bar" value="0" min="0" max="100">
+        </div>
         <div class="time-container">
             <span id="currentTime">00:00</span>
             <span id="duration">00:00</span>
@@ -190,15 +197,15 @@
 
         function updateProgress(state) {
             const progressBar = document.getElementById('progressBar');
+            const progressFilled = document.getElementById('progressFilled');
             const currentTime = document.getElementById('currentTime');
-            const progressBarFilled = progressBar.querySelector('::before');
 
-            progressBar.value = state.position / 1000;
-            currentTime.textContent = formatTime(state.position / 1000);
+            const progress = state.position / 1000;
+            progressBar.value = progress;
+            currentTime.textContent = formatTime(progress);
 
-            if (progressBarFilled) {
-                progressBarFilled.style.width = `${(state.position / state.duration) * 100}%`;
-            }
+            const progressPercentage = (state.position / state.duration) * 100;
+            progressFilled.style.width = `${progressPercentage}%`;
 
             if (!state.paused) {
                 requestAnimationFrame(() => updateProgress(state));
@@ -233,7 +240,11 @@
         });
 
         document.getElementById('progressBar').addEventListener('input', (e) => {
-            player.seek(e.target.value * 1000);
+            const progressBar = e.target;
+            const progressFilled = document.getElementById('progressFilled');
+            const value = progressBar.value;
+            progressFilled.style.width = `${(value / progressBar.max) * 100}%`;
+            player.seek(value * 1000);
         });
     </script>
 </body>
