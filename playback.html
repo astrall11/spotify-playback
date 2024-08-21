@@ -131,7 +131,6 @@
     <script>
         let player;
         let device_id = null;
-        let deviceReady = false;
         let token = null;
         let currentUri = null;
         let isPlaying = false;
@@ -155,7 +154,6 @@
 
             player.addListener('ready', ({ device_id }) => {
                 window.device_id = device_id;
-                deviceReady = true;
                 if (currentUri) {
                     playSpotifyTrack(currentUri);
                 }
@@ -245,18 +243,19 @@
         const progressBar = document.getElementById('progressBar');
 
         progressBar.addEventListener('input', (e) => {
+            isSeeking = true;
             const value = e.target.value;
             const progressFilled = document.getElementById('progressFilled');
             const currentTime = document.getElementById('currentTime');
-            isSeeking = true;
             progressFilled.style.width = `${(value / progressBar.max) * 100}%`;
             currentTime.textContent = formatTime(value);
         });
 
         progressBar.addEventListener('change', (e) => {
             const value = e.target.value;
-            isSeeking = false;
-            player.seek(value * 1000);
+            player.seek(value * 1000).then(() => {
+                isSeeking = false;
+            });
         });
     </script>
 </body>
