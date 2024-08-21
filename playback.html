@@ -220,15 +220,21 @@
             const progressBar = document.getElementById('progressBar');
             const progressFilled = document.getElementById('progressFilled');
             const currentTime = document.getElementById('currentTime');
-
+        
             const currentPositionInSeconds = position / 1000;
             progressBar.value = currentPositionInSeconds;
             currentTime.textContent = formatTime(currentPositionInSeconds);
-
+        
+            // 这里修改了代码，确保进度条颜色正确显示
             const progressPercentage = (currentPositionInSeconds / (duration / 1000)) * 100;
-            progressFilled.style.width = `${Math.min(progressPercentage, 100)}%`;
+            if (progressPercentage <= 100) {  // 确保仅更新播放部分的颜色
+                progressFilled.style.width = `${progressPercentage}%`;
+            } else {
+                progressFilled.style.width = '100%';  // 防止超出进度条长度
+            }
             progressFilled.style.backgroundColor = '#9d1dca'; // 紫色
         }
+
 
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
