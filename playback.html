@@ -226,15 +226,17 @@
             progressBar.value = currentPositionInSeconds;
             currentTime.textContent = formatTime(currentPositionInSeconds);
         
-            // 这里修改了代码，确保进度条颜色正确显示
+            // 计算进度百分比
             const progressPercentage = (currentPositionInSeconds / (duration / 1000)) * 100;
-            if (progressPercentage <= 100) {  // 确保仅更新播放部分的颜色
-                progressFilled.style.width = `${progressPercentage}%`;
-            } else {
-                progressFilled.style.width = '100%';  // 防止超出进度条长度
-            }
+            progressFilled.style.width = `${Math.min(progressPercentage, 100)}%`;
             progressFilled.style.backgroundColor = '#9d1dca'; // 紫色
+        
+            // 修复进度条拖动后颜色填充问题
+            progressBar.style.background = `linear-gradient(to right, #9d1dca ${progressPercentage}%, #e0e0e0 ${progressPercentage}%)`;
         }
+        
+        
+                
 
 
         function formatTime(seconds) {
