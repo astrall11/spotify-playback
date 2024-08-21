@@ -47,7 +47,7 @@
             cursor: pointer;
         }
         .progress-filled {
-            background-color: #9d1dca;
+            background-color: #9d1dca; /* 已播放部分的颜色 */
             height: 100%;
             width: 0;
             position: absolute;
@@ -170,7 +170,7 @@
             player.addListener('player_state_changed', state => {
                 if (state) {
                     isPlaying = !state.paused;
-                    duration = state.duration / 1000;
+                    duration = state.duration / 1000; // 将duration从毫秒转换为秒
                     updateUI(state.track_window.current_track);
                     updateProgress(state.position, state.duration);
                     updateButtonLabel();
@@ -215,10 +215,11 @@
             const progressFilled = document.getElementById('progressFilled');
             const currentTime = document.getElementById('currentTime');
 
-            progressBar.value = position / 1000;
-            currentTime.textContent = formatTime(position / 1000);
+            const currentPositionInSeconds = position / 1000;
+            progressBar.value = currentPositionInSeconds;
+            currentTime.textContent = formatTime(currentPositionInSeconds);
 
-            const progressPercentage = (position / duration) * 100;
+            const progressPercentage = (currentPositionInSeconds / (duration / 1000)) * 100;
             progressFilled.style.width = `${progressPercentage}%`;
             progressFilled.style.backgroundColor = '#9d1dca'; // 紫色
         }
@@ -235,10 +236,10 @@
         }
 
         function startProgressInterval(position, duration) {
-            clearInterval(progressInterval); // 确保之前的interval被清除
+            clearInterval(progressInterval); // 清除已有的interval
             progressInterval = setInterval(() => {
                 if (!isPlaying) return;
-                position += 1000; // 每秒更新
+                position += 1000; // 每秒增加1秒
                 updateProgress(position, duration);
             }, 1000);
         }
@@ -260,16 +261,21 @@
         });
 
         document.getElementById('progressBar').addEventListener('input', (e) => {
-    clearInterval(progressInterval);  // 暂停自动进度更新
-    const newPosition = e.target.value * 1000;
-    updateProgress(newPosition, duration);  // 实时更新UI
-});
+            clearInterval(progressInterval);  // 暂停自动进度更新
+            const newPosition = e.target.value * 1000;
+            updateProgress(newPosition, duration);  // 实时更新UI
+        });
 
-document.getElementById('progressBar').addEventListener('change', (e) => {
-    const newPosition = e.target.value * 1000;
-    player.seek(newPosition).then(() => {
-        if (isPlaying) {
-            startProgressInterval(newPosition, duration);  // 重新启动进度更新
-        }
-    });
-});
+       
+
+        document.getElementById('progressBar').addEventListener('change', (e) => {
+            const newPosition = e.target.value * 1000;
+            player.seek(newPosition).then(() => {
+                if (isPlaying) {
+                    startProgressInterval(newPosition, duration);  // 重新启动进度更新
+                }
+            });
+        });
+    </script>
+</body>
+</html>
