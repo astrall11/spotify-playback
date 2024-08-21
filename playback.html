@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -48,7 +47,7 @@
             cursor: pointer;
         }
         .progress-filled {
-            background-color: #9d1dca; /* 已播放部分的颜色 */
+            background-color: #9d1dca;
             height: 100%;
             width: 0;
             position: absolute;
@@ -221,23 +220,18 @@
             const progressBar = document.getElementById('progressBar');
             const progressFilled = document.getElementById('progressFilled');
             const currentTime = document.getElementById('currentTime');
-        
+
             const currentPositionInSeconds = position / 1000;
             progressBar.value = currentPositionInSeconds;
             currentTime.textContent = formatTime(currentPositionInSeconds);
-        
-            // 计算进度百分比
+
             const progressPercentage = (currentPositionInSeconds / (duration / 1000)) * 100;
-            progressFilled.style.width = `${Math.min(progressPercentage, 100)}%`;
+            progressFilled.style.width = `${progressPercentage}%`;
             progressFilled.style.backgroundColor = '#9d1dca'; // 紫色
-        
-            // 修复进度条拖动后颜色填充问题
+
+            // 添加此行以修复进度条背景颜色
             progressBar.style.background = `linear-gradient(to right, #9d1dca ${progressPercentage}%, #e0e0e0 ${progressPercentage}%)`;
         }
-        
-        
-                
-
 
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -254,7 +248,8 @@
             clearInterval(progressInterval); // 清除已有的interval
             progressInterval = setInterval(() => {
                 if (!isPlaying) return;
-                position += 1000; // 每秒增加1秒
+                position += 1000; // 每秒增加1
+                                
                 updateProgress(position, duration);
             }, 1000);
         }
@@ -271,7 +266,7 @@
             player.previousTrack();
         });
 
-                document.getElementById('nextButton').addEventListener('click', () => {
+        document.getElementById('nextButton').addEventListener('click', () => {
             player.nextTrack();
         });
 
@@ -292,4 +287,5 @@
     </script>
 </body>
 </html>
+
 
