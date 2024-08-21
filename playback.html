@@ -39,97 +39,53 @@
             text-align: left;
         }
         .progress-bar-container {
-    width: 100%;
-    position: relative;
-    height: 4px;
-    background: #e0e0e0;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    cursor: pointer;
-}
-
-.progress-filled {
-    background-color: #9d1dca; /* 已播放部分的颜色 */
-    height: 100%;
-    width: 0;
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 2;
-    pointer-events: none;
-}
-
-.progress-bar {
-    -webkit-appearance: none; /* 去掉默认样式 */
-    appearance: none; /* 去掉默认样式 */
-    width: 100%;
-    height: 100%;
-    background: transparent; /* 确保背景透明 */
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 3;
-    cursor: pointer; /* 保持鼠标手型样式 */
-}
-
-.progress-bar::-webkit-slider-thumb {
-    -webkit-appearance: none; /* 去掉默认样式 */
-    appearance: none; /* 去掉默认样式 */
-    width: 12px;
-    height: 12px;
-    background: #ffffff;
-    border-radius: 50%;
-    cursor: pointer;
-    position: relative;
-    z-index: 3;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-}
-
-.progress-bar:focus {
-    outline: none; /* 移除聚焦时的默认外边框 */
-}
-
-.progress-bar::-webkit-slider-runnable-track {
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-    background: transparent; /* 保持背景透明，防止颜色覆盖 */
-}
-
-.progress-bar::-webkit-slider-thumb:active {
-    background: #ffffff; /* 确保滑块在活动状态下也保持白色 */
-}
-
-.progress-bar::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    background: #ffffff;
-    border-radius: 50%;
-    cursor: pointer;
-    position: relative;
-    z-index: 3;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-}
-
-.progress-bar::-ms-thumb {
-    width: 12px;
-    height: 12px;
-    background: #ffffff;
-    border-radius: 50%;
-    cursor: pointer;
-    position: relative;
-    z-index: 3;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-}
-
-.progress-bar::-ms-fill-lower {
-    background: transparent; /* 保持透明，防止变色 */
-}
-
-.progress-bar::-ms-fill-upper {
-    background: transparent; /* 保持透明，防止变色 */
-}
-
+            width: 100%;
+            position: relative;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .progress-filled {
+            background-color: #9d1dca; /* 已播放部分的颜色 */
+            height: 100%;
+            width: 0;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .progress-bar {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 3;
+        }
+        .progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #ffffff;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            z-index: 3;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 15px;
+        }
         .control-button {
             font-size: 25px;
             color: #9d1dca;
